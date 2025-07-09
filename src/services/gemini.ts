@@ -49,3 +49,44 @@ export async function generateEmbeddings(text: string) {
 
   return response.embeddings[0].values
 }
+
+export async function generateAnswer(
+  question: string,
+  transcriptions: string[]
+) {
+  const context = transcriptions.join('\n\n')
+
+  const prompt = `
+    Based on the text below, answer the question in a clear and precise way in the same language the question was made.
+
+    CONTEXT:
+    ${context}
+
+    QUESTION:
+    ${question}
+
+    INSTRUCTIONS:
+    - Use only informations provided by the context above.
+    - IF the answer cant be found in the context just answer that you couldn't find enough information to answer.
+    - Be objective.
+    - Maintain a professional and polite tone.
+    - Quote the context when necessary.
+    - If you are quoting the context, use the term "Class content:" ou "Conteúdo da aula:" before the quote.
+    - You must translate all of the answer content into the questions language - it may be English or Brazilian Portuguese
+  `.trim()
+
+  const response = await gemini.models.generateContent({
+    model,
+    contents: [
+      {
+        text: prompt,
+      },
+    ],
+  })
+
+  if (!response.text) {
+    throw new Error('Failed to generate answer')
+  }
+
+  return response.text
+}
